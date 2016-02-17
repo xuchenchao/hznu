@@ -1,0 +1,66 @@
+#!/bin/bash
+! [ -f pdos_tot ] && ~/easy_script/splitdos.pl 
+
+##################  for ia (POSCAR infor)  #######################
+cat > merger_data.pl << EOF
+#!/usr/bin/perl
+
+open(info,">ia");
+select info;
+
+	open(POSCAR,"POSCAR");
+	for(\$i=0;\$i<5;\$i++) {
+	  \$_=<POSCAR>;
+	}
+
+	\$_=<POSCAR>;
+	@atmnam=split;print "@atmnam \n";
+	\$_=<POSCAR>;
+	@atmnum=split;print "@atmnum \n";
+	\$nspec=@atmnam;print "\$nspec \n";
+	\$tot_num=\$atmnum[0]+\$atmnum[1]; print "\$tot_num \n";
+	close(POSCAR);
+select STDOUT;
+close(info);
+
+
+EOF
+
+perl merger_data.pl
+rm merger_data.pl
+atom_name=($(cat ia | head -n 1))
+for i in  ${atom_name[@]}
+    do
+        prefix_in="pdos_""$i""_*"
+        prefix_out="pdos_""$i""_tot"
+        echo "sumpdos $i ... "
+        ~/easy_script/sumpdos.pl $prefix_in > pdos_$i  > $prefix_out
+    done
+
+#################### fot gnuplot   ##################################
+
+#Efermi=`cat OUTCAR | grep "E-fermi"| awk '{print $3}'`
+#prefix=`cat DOSCAR | head -n 5 | tail -1 | awk '{print $1}'`
+#dos_energy='$1';
+#dos_weight='2';
+#lab0='tot-dos'
+#lab1='s'
+#lab2='p'
+#lab3='d'
+#lab4='f'
+
+#num_orbit=`cat $tem_str | head -n 2 | tail -1 | wc -w`
+#case $num_orbit in
+#10) 
+#str_data_s="\$2"
+#str_data_p="\$3+\$4+\$5"
+#str_data_d="\$6+\$7+\$8+\$9+\$10"
+#;;
+#20)
+#str_data_s="\$2+\$3"
+#str_data_p="\$4+\$5+\$6+\$7+\$8+\$9"
+#str_data_d="\$10+\$11+\$12+\$13+\$14+\$15+\$16+\$17+\$18+\$19"
+#;;
+
+
+ 

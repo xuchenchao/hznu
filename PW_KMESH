@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#Dir_lat_length=(1.889726878 1.889726878 1.889726878)
+
+cry_lat=($(cat Cu.relax.out | grep "crystal axes" -A3 | tail -3 | awk '{print  $4 " " $5 " "  $6 }'))
+
+for j in `seq 0 2`
+	do
+		cry_lat_length[$j]=`echo "scale=9;sqrt(${cry_lat[3*$j]}^2+${cry_lat[3*$j+1]}^2+${cry_lat[3*$j+2]}^2) " | bc`
+	done
+rec_lat=($(cat Cu.relax.out | grep "reciprocal axes: (cart. coord. in units 2 pi/alat)" -A3 | tail -3 | awk '{print  $4 " " $5 " "  $6 }'))
+#rec_lat_length=(`seq 1 3`)
+for j in `seq 0 2`
+	do 
+#	     rec_lat_length[$j]=`echo "scale=9;sqrt(${rec_lat[3*$j]}^2+${rec_lat[3*$j+1]}^2+${rec_lat[3*$j+2]}^2) /0.53 / ${Dir_lat_length[j]} * ${cry_lat_length[j]}" | bc`
+	     rec_lat_length[$j]=`echo "scale=9;sqrt(${rec_lat[3*$j]}^2+${rec_lat[3*$j+1]}^2+${rec_lat[3*$j+2]}^2)  " | bc`
+	done
+echo ${rec_lat_length[@]}
+
+
+

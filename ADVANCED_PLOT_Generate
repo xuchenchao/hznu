@@ -1,0 +1,109 @@
+#!/bin/bash
+! [ -f POSCAR ] && echo "ERROR! NO POSCAR" && exit
+>NUM_GROUP
+>Advanced_plot.m
+read -p "Please Input the number of group :" num_group
+while [ -z "$num_group" ]
+	do
+		read -p "Please Input the number of group :" num_group
+	done
+for i in `seq 1 $num_group`
+	do
+		read -p "Please Input the atom in group $i :" group$i
+		unset aa
+		eval aa="\$group$i"
+		printf "$aa;" >> NUM_GROUP
+		while [ -z "$aa" ]
+			do
+				echo "NO INPUT "
+				read -p "Please Input the atom in group $i :" group$i
+				eval aa="\$group$i"
+			done
+
+done
+atoms_group=`cat NUM_GROUP | wc -l`
+printf "function Advanced_plot(atom,orbit)
+	load dos.mat %% mainly use Pdos_s Pdos_p Pdos_d
+        atoms_group=[">> Advanced_plot.m 
+	cat NUM_GROUP >> Advanced_plot.m 
+	printf "];
+        num_group=size($atoms_group,1);" >> Advanced_plot.m 
+
+printf "  for j=1:num_group
+      Pdos_s_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_s_select(:,1,j)=Pdos_s(:,1);
+
+      Pdos_p_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_p_select(:,1,j)=Pdos_p(:,1);
+
+
+      Pdos_d_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_d_select(:,1,j)=Pdos_d(:,1);
+  end
+  
+  for j=1:num_group
+      for i=1:size(atoms_group,2)
+        if atoms_group(j,i)==0
+            break;
+        else
+            Pdos_s_select(:,2,j)=Pdos_s_select(:,2,j)+Pdos_s(:,2,atoms_group(j,i));
+            Pdos_p_select(:,2,j)=Pdos_p_select(:,2,j)+Pdos_p(:,2,atoms_group(j,i));
+            Pdos_d_select(:,2,j)=Pdos_d_select(:,2,j)+Pdos_d(:,2,atoms_group(j,i));
+        end
+      end
+  end
+  
+
+  
+  %%   dos_tot_mod=dos_tot(find(floor(dos_tot(:,1))==aa,1):find(ceil(dos_tot(:,1))==bb,1),:);
+  %%for j=1:num_group
+  %%    Pdos_s_select_mod(:,:,j)=Pdos_s_select((find(floor(Pdos_s_select(:,1,j))==aa,1)):(find(ceil(Pdos_s_select(:,1,j)),1)),:,j);
+  %%    Pdos_p_select_mod(:,:,j)=Pdos_p_select((find(floor(Pdos_p_select(:,1,j))==aa,1)):(find(ceil(Pdos_p_select(:,1,j)),1)),:,j);
+  %%end
+  
+  switch orbit
+        case -1
+                s=figure;
+                set(s,'name','tot_dos')
+                hold on
+                axis([min(dos_tot(:,1)) max(dos_tot(:,1)) min_up  max_up])
+                plot(dos_tot(:,1), dos_tot(:,2),'r');
+                line([0,0],[min_up,max_up+0.1],'linestyle','--','color','k')        
+         case 0
+                figure;
+                s=title('');
+                set(s,'String',['atom',num2str(atom),'  s orbit']);
+                hold on
+                axis([min(dos_tot(:,1)) max(dos_tot(:,1)) min_up  max_up])
+                plot(dos_tot(:,1), dos_tot(:,2),'r');
+                line([0,0],[min_up,max_up+0.1],'linestyle','--','color','k')
+                plot(Pdos_s_select(:,1,atom),Pdos_s_select(:,2,atom),'color', rand(1,3));
+        case 1
+                figure;
+                s=title('');
+                set(s,'String',['atom',num2str(atom),'  p orbit']);
+                hold on
+                axis([min(dos_tot(:,1)) max(dos_tot(:,1)) min_up  max_up])
+                plot(dos_tot(:,1), dos_tot(:,2),'r');
+                line([0,0],[min_up,max_up+0.1],'linestyle','--','color','k')                
+                plot(Pdos_p_select(:,1,atom),Pdos_p_select(:,2,atom),'color', rand(1,3));
+        case 2  
+                figure;
+                s=title('');
+                set(s,'String',['atom',num2str(atom),'  d orbit']);           
+                hold on
+                axis([min(dos_tot(:,1)) max(dos_tot(:,1)) min_up  max_up])
+                plot(dos_tot(:,1), dos_tot(:,2),'r');
+                line([0,0],[min_up,max_up+0.1],'linestyle','--','color','k')                
+                plot(Pdos_d_select(:,1,atom),Pdos_d_select(:,2,atom),'color', rand(1,3));            
+       otherwise
+            disp('no orbit input'); 
+  end
+   save p_dos.mat;
+end
+
+
+
+
+" >> Advanced_plot.m
+

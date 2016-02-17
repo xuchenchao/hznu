@@ -1,0 +1,42 @@
+#!/bin/bash
+! [ -f POSCAR ] && echo "no POSCAR!" && exit
+! [ -f DOSCAR ] && echo "no DOSCAR!" && exit
+! [ -f pdos_tot ] && ~/easy_script/splitdos.pl
+Efermi=`cat OUTCAR | grep "E-fermi"| awk '{print $3}'`
+LSORBIT=`cat OUTCAR | grep "LSORBIT" | awk '{print $3}'`
+[ "$LSORBIT" = "T" ]  && prefix="`cat DOSCAR | head -n 5 | tail -1 | awk '{print $1}'`""_soc" ||  prefix="`cat DOSCAR | head -n 5 | tail -1 | awk '{print $1}'`""_mn"
+dos_energy='$1';
+dos_weight='2';
+lab0='tot-dos'
+atom1="pdos_""`cat POSCAR | head -n 6 | tail -1 |awk '{print $1}'`""_1";
+atom1_num=`cat POSCAR | head -n 7 | tail -1 |awk '{print $1}'`;
+atom2="pdos_""`cat POSCAR | head -n 6 | tail -1 |awk '{print $2}'`""_1";
+atom2_num=`cat POSCAR | head -n 7 | tail -1 |awk '{print $2}'`;
+lab1="`cat POSCAR | head -n 6 | tail -1 |awk '{print $1}'`"" p"
+lab2="`cat POSCAR | head -n 6 | tail -1 |awk '{print $2}'`"" d"
+[ "$LSORBIT" = "T" ] && str_p="(\$6+\$10+\$14)*$atom1_num" || str_p="(\$3+\$4+\$5)*$atom1_num"
+[ "$LSORBIT" = "T" ] && str_d="(\$18+\$22+\$26+\$30+\$34)*$atom2_num" || str_d="(\$6+\$7+\$8+\$9+\$10)*$atom2_num"
+
+cat > plot.$prefix.dos << EOF
+set key right top
+set xlabel'Energy(eV)'
+set ylabel'DOS(eV^{-1}/cell)'
+set xrange[-6:15];set xtics 5;set mxtics 5; 
+set yrange[0:10];set ytics 5;
+set arrow from 0.0,0.0 to 0.0,10 nohead lt 0
+
+plot [-7:12] [] "pdos_tot" u ($dos_energy-$Efermi) :$dos_weight title '$lab0' w l,"$atom1" u ($dos_energy-$Efermi):($str_p) title '$lab1' w l,"$atom2" u  ($dos_energy-$Efermi):($str_d) title '$lab2' w l 
+
+set terminal postscript eps color solid enh
+set output "pdos_$prefix.eps"
+replot
+
+EOF
+
+gnuplot plot.$prefix.dos
+
+
+#plot [-8:18] [0:10] ($1-6.3044) :2 title 'tot-dos' w l,"pdos_As_1" u ($1-6.3044):(($6+$10+$14)*4) title 'As_p' w l,"pdos_Ta_1" u  ($1-6.3044):(($18+$22+$26+$30+$34)*2) title 'As_d' w l 
+
+
+

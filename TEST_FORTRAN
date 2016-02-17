@@ -1,0 +1,5 @@
+#!/bin/bash
+
+gfortran test.f90
+#./a.out
+

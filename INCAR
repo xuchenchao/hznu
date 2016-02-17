@@ -1,0 +1,44 @@
+SYSTEM=TaAs
+NPAR=4
+PREC=High
+ENCUT=336
+EDIFF=1E-7
+ALGO=Normal
+ISMEAR=0    #-5 for DOS, 0 for 结构优化&自洽&能带
+SIGMA=0.01  #if ISMEAR=-5,do not use this line.
+   #Whether Spin ploarized or not
+#ISPIN=2
+#MAGMOM=12*0 -1 1 -1 1 4*0
+   #Next 5 Lines for structure optimization
+EDIFFG=-0.001
+NSW=100
+IBRION=1
+ISIF=3
+NELMIN=8
+   #Next 5 Lines for DOS, Next Line for band structure
+#ICHARG=11
+LORBIT=11 
+#EMIN=-45
+#EMAX=23
+#NEDOS=68000
+   #Next 2 Lines Do not use in self consistence
+LWAVE=.FALSE.
+LCHARG=.FALSE.
+  #Next for phonopy caculation
+#EDIFF=1E-8
+#IBRION=-1
+#LREAL=F
+#ADDGRID=T
+  #For LDA+U
+#LDAU=T
+#LDAUTYPE=2
+#LDAUL=12*-1 4*2 4*-1
+#LDAUU=12*0 4*6 4*0
+#LDAUJ=20*0
+#LDAUPRINT=1
+#LASPH=T
+  #SCO
+LSORBIT=.TRUE.
+LNONCOLLINEAR=.TRUE.
+MAGMOM=18*0
+

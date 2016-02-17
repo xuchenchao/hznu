@@ -1,0 +1,13 @@
+for i in POS*
+ do
+ a=`echo $i | cut -c 8-`
+ mkdir $a
+ cp $i $a/POSCAR
+ cp  INCAR $a
+ cp KPOINTS $a
+ cp job.template $a
+ #cp /public/home/ccxu/scratch/homework/YNiO/Trigonal/Phonopy2/001//KPOINT $a
+ #cp /public/home/ccxu/scratch/homework/YNiO/Trigonal/Phonopy2/001/INCAR  $a
+ #cp ../relax/job.template $a
+ cp ../relax/POTCAR $a
+done

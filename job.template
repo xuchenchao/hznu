@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+#PBS -N JOB_NAME
+#PBS -o mpi.out
+#PBS -e mpi.err
+#PBS -M 21336004@zju.edu.cn
+#PBS -j oe
+#PBS -l nodes=1:ppn=16
+#PBS -l walltime=24:30:00
+#PBS -q submit
+
+module load intel_env/default
+
+NCPUS="`cat $PBS_NODEFILE | wc -l`"
+
+#NTHREAD=${NCPUS}
+NTHREAD=1
+
+OMP_NUM_THREADS=${NTHREAD}
+MKL_NUM_THREADS=${NTHREAD}
+GOTO_NUM_THREADS=${NTHREAD}
+
+exe=/public/software/vasp/5.3.5/vasp
+
+echo "JOB $PBS_JOBNAME Start ..."
+echo 
+echo "Running on nodes..."
+echo "===="
+cat $PBS_NODEFILE | uniq -c
+echo "===="
+echo "Starting date/time: `date`"
+
+cd $PBS_O_WORKDIR
+
+mpirun --mca btl openib,self,sm --bind-to none -n ${NCPUS} $exe > vasp.log
+
+echo "Finishing date/time: `date`"
+echo "Job done..."
+

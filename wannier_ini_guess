@@ -1,0 +1,10 @@
+ plot [-2:2] [] "pdos_tot" u ($1-6.4249):2 w l ,"pdos_As_1" u ($1-6.4249):($2*4) w l,"pdos_As_1" u ($1-6.4249):(($3+$4+$5)*4) w l,"pdos_As_1" u ($1-6.4249):(($6+$7+$8+$9+$10)*4),"pdos_Ta_1" u ($1-6.4249):(2*($2)) w l, "pdos_Ta_1" u ($1-6.4249):(2*($3+$4+$5)) w l,"pdos_Ta_1" u ($1-6.4249):(2*($6+$7+$8+$9+$10)) w l
+
+set terminal postscript eps color enh
+set output "wannier_plot.eps"
+#set terminal png
+#set output "dos_atom.png"
+replot
+
+
+

@@ -1,0 +1,71 @@
+ #!/bin/bash
+	PESTAT
+	file_path=`pwd`
+        printf "Please input the Type of Core:"
+        read TYPE_CORE
+	[ "$TYPE_CORE" = "X" ] && TYPE_CORE="Dual-Xeon" && TYPE_VASP="exe=/public/software/vasp/5.3.5/vasp"
+	[ "$TYPE_CORE" = "O" ] && TYPE_CORE="Dual-Opteron" && TYPE_VASP="exe=/public/software/vasp/5.3.5/vasp"
+        [ "$TYPE_CORE" = "Q" ] && TYPE_CORE="Quad-Opteron" && TYPE_VASP="exe=/public/software/vasp/5.3.5/vasp"
+        [ "$TYPE_CORE" = "C" ] && TYPE_CORE="Dual-Opteron_Case" && TYPE_VASP="exe=/public/software/vasp/5.3.5/vasp"
+	
+	printf "Please input the number of nodes:"	
+	read nodes
+	[ -z nodes ] && nodes="1"
+	printf "Please input the ppn:"	
+	read ppn
+	[ -z ppn ] && ppn="16"
+	printf "Please input the JOB_NAME:" 
+	read JOB_NAME
+	[ -z JOB_NAME ] && JOB_NAME="JOB_NAME"
+	printf  "$TYPE_CORE   nodes=$nodes  ppn=$ppn\n"
+	JOB_NAME_ori="`sed -n "/JOB_NAME/p" ~/job.template | cut -d" " -f3`"
+	nodes_ori="`sed -n "/ppn/p" ~/job.template | sed -n "s/:/ /gp" | awk '{print $3}'`"
+	ppn_ori="`sed -n "/ppn/p" ~/job.template | sed -n "s/:/ /gp" | awk '{print $4}'`"
+	TYPE_CORE_ori="`sed -n "/ppn/p" ~/job.template | sed -n "s/:/ /gp" | awk '{print $5}'`"
+	TYPE_VASP_ori="`sed -n "/software/p" ~/job.template`"	
+	case $TYPE_CORE in
+		Dual-Xeon )
+			#echo "Xeon case "
+		! [ -f POSCAR ] && echo 'NO POSCAR!' && exit
+		! [ -f POTCAR ] && echo 'NO POTCAR!' && exit	
+		! [ -f KPOINTS ] && echo 'NO KPOINTS!' && exit	
+		! [ -f INCAR ] && echo 'NO INCAR!' && exit
+		cat ~/job.template | sed -e "s/$JOB_NAME_ori/$JOB_NAME/" | sed -e "s/$nodes_ori/nodes=$nodes/" |sed -e "s/$ppn_ori/ppn=$ppn/" | sed -e "s/$TYPE_CORE_ori/$TYPE_CORE/" | sed -e "s#$TYPE_VASP_ori#$TYPE_VASP#" > job.template
+		#echo "123"		
+		qsub job.template
+		;;
+		Dual-Opteron)
+			#echo "Opteron case"
+		! [ -f POSCAR ] && echo 'NO POSCAR!' && exit
+		! [ -f POTCAR ] && echo 'NO POTCAR!' && exit	
+		! [ -f KPOINTS ] && echo 'NO KPOINTS!' && exit	
+		! [ -f INCAR ] && echo 'NO INCAR!' && exit
+		cat ~/job.template | sed -e "s/$JOB_NAME_ori/$JOB_NAME/" | sed -e "s/$nodes_ori/nodes=$nodes/" |sed -e "s/$ppn_ori/ppn=$ppn/" | sed -e "s/$TYPE_CORE_ori/$TYPE_CORE/" | sed -e "s#$TYPE_VASP_ori#$TYPE_VASP#" > job.template
+		qsub job.template
+		;;
+		Quad-Opteron)
+		! [ -f POSCAR ] && echo 'NO POSCAR!' && exit
+		! [ -f POTCAR ] && echo 'NO POTCAR!' && exit	
+		! [ -f KPOINTS ] && echo 'NO KPOINTS!' && exit	
+		! [ -f INCAR ] && echo 'NO INCAR!' && exit
+		cat ~/job.template | sed -e "s/$JOB_NAME_ori/$JOB_NAME/" | sed -e "s/$nodes_ori/nodes=$nodes/" |sed -e "s/$ppn_ori/ppn=$ppn/" | sed -e "s/$TYPE_CORE_ori/$TYPE_CORE/" | sed -e "s#$TYPE_VASP_ori#$TYPE_VASP#" > job.template
+		qsub job.template
+		;;
+		Dual-Opteron_Case)
+		read -p "Case01 or 02 or 03 (input like 01 or 02 or 03 ): " TYPE_CORE
+		! [ -f POSCAR ] && echo 'NO POSCAR!' && exit
+		! [ -f POTCAR ] && echo 'NO POTCAR!' && exit	
+		! [ -f KPOINTS ] && echo 'NO KPOINTS!' && exit	
+		! [ -f INCAR ] && echo 'NO INCAR!' && exit
+		cat ~/job.template | sed -e "s/$JOB_NAME_ori/$JOB_NAME/" | sed -e "s/$nodes_ori/nodes=$nodes/" |sed -e "s/$ppn_ori/ppn=$ppn/" | sed -e "s/$TYPE_CORE_ori/Case$TYPE_CORE/" | sed -e "s#$TYPE_VASP_ori#$TYPE_VASP#" > job.template
+		qsub job.template
+		;;
+		*)
+			echo 'WRONG TYPE!'
+		;;
+	esac
+			
+	# 
+	 	    
+       			 
+  

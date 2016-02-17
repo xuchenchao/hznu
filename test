@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+
+#printf "Please input the thing you want to caculate (like Cu O) :"
+read OBJECT1 OBJECT2 OBJECT3 OBJECT4
+#printf "$OBJECT1  $OBJECT2  $OBJECT3  $OBJECT4 \n"
+[ -z "$OBJECT1" ] && printf "Wrong! NO INPUT \n" && exit && echo "123"
+#printf "$OBJECT1  $OBJECT2  $OBJECT3  $OBJECT4 \n"
+#echo "jj"
+
+#read potential1 potential2 potential3 potential4
+#for i in `seq 1 4`
+#	do
+#		
+#		eval aa="\$potential$i"	
+#		#printf "$aa\n"		
+#		[ -n "$aa" ] && printf "$aa\n"
+#	done
+
+# for i in `seq 1 4`
+#	do 
+#		eval a$i=$i
+#		 echo "\$a$i" 
+#	done

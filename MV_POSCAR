@@ -1,0 +1,15 @@
+#excute in pho
+for i in POSCAR*
+   do
+	   j=`echo $i | cut -c 8-10`	   
+	   mkdir $j 
+	   cp POSCAR-$j $j/POSCAR
+	   cp ~/easy_script/INCAR $j
+	   cp  ~/easy_script/KPOINTS $j
+	   #sed -e "s#JOB_NAME#BaFeAs_O_$j#" ~/job.template1 > $j/job.template
+	   #cp ~/job.template2 $j
+	   cp  ../POC/POTCAR $j
+  done
+
+
+

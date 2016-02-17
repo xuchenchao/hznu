@@ -1,0 +1,82 @@
+#!/bin/bash
+#read KKK
+#printf "hellow  $KKK \n " >> 1212.m
+#cat 1212.m
+
+>  KPOINTS
+>  K_PATH_wannier
+printf "k-point
+100
+Line-mode
+rec
+"  >> KPOINTS
+PATH_K=0
+read -p "please input the number of K:"  num
+while [ -z "$num" ]
+	do
+		read -p "please input the number of K:" num
+	done
+[ -f K_PATH ] && PATH_K=1;echo "K_PATH exists!"  
+
+
+for i in `seq 1 $num`
+	do
+           if [ $PATH_K = 0 ];then
+		read -p "please input the $i KPOINTS:" K$i
+		eval  aa="\$K$i"
+		while [ -z "$aa" ]
+			do
+				read -p "please input the $i KPOINTS:" K$i
+				eval  aa="\$K$i"			
+				#eval echo "\$K$i"		
+			done
+			
+		read -p "please input the coordinate (like 0 0 0):" x y z
+		[ -n "$x" ] && [ -n "$y" ] && [ -n "$z" ] && bb="ok"
+		while [ -z "$bb" ]
+			do
+				if [ -z "$bb" ]
+				   then
+					echo "x y z Wrong Input"
+					read -p "please input the coordinate (like 0 0 0):" x y z
+					[ -n "$x" ] && [ -n "$y" ] && [ -n "$z" ] && bb="ok"
+				   else
+					[ -n "$x" ] && [ -n "$y" ] && [ -n "$z" ] && bb="ok"	
+				fi
+
+			done	
+	  else 
+                aa=`cat K_PATH | head -n $i | tail -1 | awk  '{print $4}'`
+  		#eval  aa="\$K$i"
+		x=`cat K_PATH | head -n $i | tail -1 | awk  '{print $1}'`
+		y=`cat K_PATH | head -n $i | tail -1 | awk  '{print $2}'`
+		z=`cat K_PATH | head -n $i | tail -1 | awk  '{print $3}'`
+	        interupt=`cat K_PATH | head -n $i | tail -1 | awk  '{print $5}'`
+          fi	
+	       if [ -z $CONTROL ];then
+                    printf "%f" $x >> KPOINTS ;printf "  " >> KPOINTS;  printf "%f" $y >> KPOINTS;printf "  " >> KPOINTS;printf "%f" $z >> KPOINTS;printf "   !$aa\n" >> KPOINTS
+                    printf "$aa    " >> K_PATH_wannier ; printf "%f" $x  >> K_PATH_wannier ;printf "  " >> K_PATH_wannier;  printf "%f" $y >> K_PATH_wannier;printf "  " >> K_PATH_wannier;printf "%f" $z >> K_PATH_wannier; printf "     "    >> K_PATH_wannier          
+
+ 
+               else 
+                    CONTROL=""
+               fi
+#		[ $i -ne 1 ] && [ $num -ne $i ] && printf "\n$x $y $z !$aa\n" >> KPOINTS
+          if    ! [ -z $interupt ];then
+                CONTROL=1
+          else   
+               if [ $i -ne 1 ] && [ $num -ne $i ];then
+                     printf "\n"  >> KPOINTS
+                     printf "%f" $x >> KPOINTS ;printf "  " >> KPOINTS;  printf "%f" $y >> KPOINTS;printf "  " >> KPOINTS;printf "%f" $z >> KPOINTS;printf "   !$aa\n" >> KPOINTS
+                     printf "\n"  >> K_PATH_wannier
+                     printf "$aa    " >> K_PATH_wannier ; printf "%f" $x  >> K_PATH_wannier ;printf "  " >> K_PATH_wannier;  printf "%f" $y >> K_PATH_wannier;printf "  " >> K_PATH_wannier;printf "%f" $z >> K_PATH_wannier; printf "     " >> K_PATH_wannier
+
+               fi
+                     unset aa ; unset bb ; unset x ; unset y ; unset z
+	  fi	
+	done	
+cat  KPOINTS
+	
+
+
+

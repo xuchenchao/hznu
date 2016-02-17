@@ -1,0 +1,39 @@
+##
+num_bands=4
+num_wann=4 #number of local orbit
+exclude_bands=5-8
+
+begin projections   !determined by examining the PDOS comparision
+Si:sp3
+end projections
+
+dis_win_max=7
+#dis_win_min=
+dis_froz_max=5.7
+#dis_froz_min=
+
+num_iter=20000 !P28 generate projected WFs rather than maximally-localized WFs
+dis_num_iter=20000
+
+conv_window=4
+conv_tol=1E-12
+dis_conv_tol=1E-12
+
+hr_plot=F !If true Hamiltonian matrix in the WF basis will be written to seedname_hr.dat. default=F
+fermi_energy=5.6126
+fermi_surface_plot=T
+fermi_surface_num_points=100
+
+
+Begin Kpoint_Path
+  L  0.500  0.500 0.500    G  0.000  0.000 0.000
+  G  0.000  0.000 0.000    X  0.500  0.000 0.500
+  X  0.500  0.000 0.500    K  0.375  0.375 0.750
+  K  0.375  0.375 0.750    G  0.000  0.000 0.000
+end Kpoint_Path
+
+bands_plot=T
+
+
+
+

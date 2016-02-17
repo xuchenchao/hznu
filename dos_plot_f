@@ -1,0 +1,200 @@
+#!/bin/bash
+! [ -f pdos_tot ] && ~/easy_script/splitdos.pl 
+
+
+##################  for ia (POSCAR infor)  #######################
+cat > merger_data.pl << EOF
+#!/usr/bin/perl
+
+open(info,">ia");
+select info;
+
+	open(POSCAR,"POSCAR");
+	for(\$i=0;\$i<5;\$i++) {
+	  \$_=<POSCAR>;
+	}
+
+	\$_=<POSCAR>;
+	@atmnam=split;print "@atmnam \n";
+	\$_=<POSCAR>;
+	@atmnum=split;print "@atmnum \n";
+	\$nspec=@atmnam;print "\$nspec \n";
+	\$tot_num=\$atmnum[0]+\$atmnum[1]; print "\$tot_num \n";
+	close(POSCAR);
+select STDOUT;
+close(info);
+
+
+EOF
+
+perl merger_data.pl
+rm merger_data.pl
+#################### for dos_orbit.dat && dos_atom.dat   ##################################
+mv pdos_tot tot_pdos
+tem_prefix=`cat ia | head -n 1 | awk '{print $1}'`
+tem_str="pdos_""$tem_prefix""_1"
+num_orbit=`cat $tem_str | head -n 2 | tail -1 | wc -w`
+j=0;
+rm -f pdos_*_tot
+for i in pdos_*
+   do 
+      if [ $j = 0 ]
+         then
+		cat $i | sed -e '/^#/d' > dos_orbit.dat
+      else
+      		cat $i | sed -e '/^#/d' > pdos_temp
+      		paste  dos_orbit.dat pdos_temp > dos_atom_temp
+                cat dos_atom_temp > dos_orbit.dat
+      fi
+    j=` expr $j + $num_orbit` 
+    printf "$i \n"
+   done
+rm *temp*
+mv tot_pdos pdos_tot 
+
+nspec=`cat ia | head -n 3 |  tail -1 | awk '{print $1}'` 
+for i in `seq 1 $nspec`
+    do
+         
+         atmnam=`cat ia | head -n 1 | awk '{print $'$i'}'`
+         atstr="dos_$atmnam.dat"
+         search_name="pdos_$atmnam*"
+         m=0
+         for h in $search_name
+		do
+                    if [ $m = 0 ]
+                         then
+		               cat $h | sed -e '/^#/d' > $atstr	
+                    else	
+                               cat $h  | sed -e '/^#/d' > pdos_temp
+      		               paste  $atstr pdos_temp > dos_atom_temp
+                               cat dos_atom_temp > $atstr
+                    fi
+      m=` expr $m + 1` 
+                done
+rm *temp*
+
+temp=`cat $atstr | head -n 1 | wc -w`
+echo -n "$temp " >> ia
+unset temp
+    done
+#################### fot gnuplot   ##################################
+
+Efermi=`cat OUTCAR | grep "E-fermi"| awk '{print $3}'`
+prefix=`cat DOSCAR | head -n 5 | tail -1 | awk '{print $1}'`
+dos_energy='$1';
+dos_weight='2';
+lab0='tot-dos'
+lab1='s'
+lab2='p'
+lab3='d'
+lab4='f'
+#str_data=("str_data_s" "str_data_px" "str_data_py" "str_data_pz" "str_data_dxy" "str_data_dyz" "str_data_dxz" "str_data_dx2-y2" "str_data_dz2")
+str_data_s=""
+str_data_px=""; 
+str_data_py=""; 
+str_data_pz=""
+str_data_dxy=""; 
+str_data_dyz=""; 
+str_data_dxz="";
+str_data_dx2y2=""
+str_data_dz2=""
+str_data_f0=""
+str_data_f1=""
+str_data_f2=""
+str_data_f3=""
+str_data_f4=""
+str_data_f5=""
+str_data_f6=""
+
+for k in `seq 2 $num_orbit`
+    do
+	for i in `seq $k $num_orbit $j`
+	    do 
+	       [ $i -eq 2 ] && [ $k -eq 2 ] && str_data_s="\$$i"
+	       [ $i -ne 2 ] && [ $k -eq 2 ] && str_data_s="$str_data_s+\$$i"
+
+	       [ $i -eq 3 ] && [ $k -eq 3 ] && str_data_px="\$$i"
+	       [ $i -ne 3 ] && [ $k -eq 3 ] && str_data_px="$str_data_px+\$$i"	
+
+	       [ $i -eq 4 ] && [ $k -eq 4 ] && str_data_py="\$$i"
+	       [ $i -ne 4 ] && [ $k -eq 4 ] && str_data_py="$str_data_py+\$$i"	
+
+	       [ $i -eq 5 ] && [ $k -eq 5 ] && str_data_pz="\$$i"
+	       [ $i -ne 5 ] && [ $k -eq 5 ] && str_data_pz="$str_data_pz+\$$i"	
+
+	       [ $i -eq 6 ] && [ $k -eq 6 ] && str_data_dxy="\$$i"
+	       [ $i -ne 6 ] && [ $k -eq 6 ] && str_data_dxy="$str_data_dxy+\$$i"	
+
+	       [ $i -eq 7 ] && [ $k -eq 7 ] && str_data_dyz="\$$i"
+	       [ $i -ne 7 ] && [ $k -eq 7 ] && str_data_dyz="$str_data_dyz+\$$i"
+
+	       [ $i -eq 8 ] && [ $k -eq 8 ] && str_data_dxz="\$$i"
+	       [ $i -ne 8 ] && [ $k -eq 8 ] && str_data_dxz="$str_data_dxz+\$$i"
+
+	       [ $i -eq 9 ] && [ $k -eq 9 ] && str_data_dx2y2="\$$i"
+	       [ $i -ne 9 ] && [ $k -eq 9 ] && str_data_dx2y2="$str_data_dx2y2+\$$i"
+
+	       [ $i -eq 10 ] && [ $k -eq 10 ] && str_data_dz2="\$$i"
+	       [ $i -ne 10 ] && [ $k -eq 10 ] && str_data_dz2="$str_data_dz2+\$$i"
+               
+	       [ $i -eq 11 ] && [ $k -eq 11 ] && str_data_f0="\$$i"	       
+               [ $i -ne 11 ] && [ $k -eq 11 ] && str_data_f0="$str_data_f0+\$$i"
+
+	       [ $i -eq 12 ] && [ $k -eq 12 ] && str_data_f1="\$$i"	       
+               [ $i -ne 12 ] && [ $k -eq 12 ] && str_data_f1="$str_data_f1+\$$i" 
+
+	       [ $i -eq 13 ] && [ $k -eq 13 ] && str_data_f2="\$$i"	       
+               [ $i -ne 13 ] && [ $k -eq 13 ] && str_data_f2="$str_data_f2+\$$i" 
+
+	       [ $i -eq 14 ] && [ $k -eq 14 ] && str_data_f3="\$$i"	       
+               [ $i -ne 14 ] && [ $k -eq 14 ] && str_data_f3="$str_data_f3+\$$i"     
+
+	       [ $i -eq 15 ] && [ $k -eq 15 ] && str_data_f4="\$$i"	       
+               [ $i -ne 15 ] && [ $k -eq 15 ] && str_data_f4="$str_data_f4+\$$i" 
+
+	       [ $i -eq 16 ] && [ $k -eq 16 ] && str_data_f5="\$$i"	       
+               [ $i -ne 16 ] && [ $k -eq 16 ] && str_data_f5="$str_data_f5+\$$i" 
+
+	       [ $i -eq 17 ] && [ $k -eq 17 ] && str_data_f6="\$$i"	       
+               [ $i -ne 17 ] && [ $k -eq 17 ] && str_data_f6="$str_data_f6+\$$i"          
+	    done
+     done
+#echo "$str_data_s \n"
+#echo "$str_data_px \n"
+#echo "$str_data_py \n"
+#echo "$str_data_pz \n"
+#echo "$str_data_dxy \n"
+#echo "$str_data_dyz \n"
+#echo "$str_data_dxz \n"
+#echo "$str_data_dx2y2 \n"
+#echo "$str_data_f6 \n"
+
+str_data_p="$str_data_px+$str_data_py+$str_data_pz"
+str_data_d="$str_data_dxy+$str_data_dyz+$str_data_dxz+$str_data_dx2y2+$str_data_dz2"
+str_data_f="$str_data_f0+$str_data_f1+$str_data_f2+$str_data_f3+$str_data_f4+$str_data_f5+$str_data_f6"
+############### plot  pdos #######################
+LSORBIT=`cat OUTCAR | grep "LSORBIT" | awk '{print $3}'`
+[ "$LSORBIT" = "T" ]  && prefix_output="$prefix""_soc""_dos" ||  prefix_output="$prefix""_nm""_dos"
+
+cat > plot.$prefix.dos << EOF
+set key right top
+set xlabel'Energy(eV)'
+set ylabel'DOS(eV^{-1}/cell)'
+set xrange[-6:10];set xtics 5;set mxtics 5; 
+set yrange[0:15];set ytics 5;
+set arrow from 0.0,0.0 to 0.0,15.0 nohead lt 0
+
+plot 'pdos_tot' u ($dos_energy-$Efermi) :$dos_weight title '$lab0' w l , 'dos_orbit.dat'  u ($dos_energy- $Efermi):($str_data_s) title '$lab1' w l, "" u ($dos_energy- $Efermi):($str_data_p) title '$lab2' w l, "" u ($dos_energy- $Efermi):($str_data_d) title '$lab3' w l,"" u ($dos_energy- $Efermi):($str_data_f) title '$lab4' w l
+
+set terminal postscript eps color enh
+set output "$prefix_output.eps"
+
+replot
+EOF
+
+
+
+echo "plot plot.$prefix.dos..."
+gnuplot plot.$prefix.dos
+

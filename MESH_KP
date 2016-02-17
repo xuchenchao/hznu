@@ -1,0 +1,5 @@
+#!/bin/bash
+
+num=`cat -n OUTCAR | grep "volume of cell" | tail -1 | sed  "s/ //g" | cut -f1`
+awk "NR>=$num && NR<=$[$num+10]" OUTCAR
+

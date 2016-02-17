@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+
+printf "Please input the thing you want to caculate (like Cu O) :"
+read OBJECT1 OBJECT2 OBJECT3 OBJECT4
+#printf "$OBJECT1  $OBJECT2  $OBJECT3  $OBJECT4 \n"
+[ -z "$OBJECT1" ] && printf "Wrong! NO INPUT \n" && exit
+
+mkdir POC
+mkdir relax 
+mkdir scf
+mkdir bands
+mkdir dos
+#mkdir pic
+
+[ -n "$OBJECT1" ] && ls /public/software/vasp/pseudo/PAW_PBE | sed -n "/^$OBJECT1/p" && echo "========================================"
+[ -n "$OBJECT2" ] && ls /public/software/vasp/pseudo/PAW_PBE | sed -n "/^$OBJECT2/p" && echo "========================================"
+[ -n "$OBJECT3" ] && ls /public/software/vasp/pseudo/PAW_PBE | sed -n "/^$OBJECT3/p" && echo "========================================"
+[ -n "$OBJECT4" ] && ls /public/software/vasp/pseudo/PAW_PBE | sed -n "/^$OBJECT4/p" && echo "========================================"
+printf "Select pseudo-potential (like Cu_pv O_s):" 
+read potential1 potential2 potential3 potential4
+
+touch  POC/POTCAR
+for i in `seq 1 4`
+	do
+		eval aa="\$potential$i"	
+		[ -n "$aa" ] && cp /public/software/vasp/pseudo/PAW_PBE/$aa/POTCAR  POC/POTCAR_$aa && cat POC/POTCAR_$aa >> POC/POTCAR
+	done
+
+
+#cp ~/easy_script/MODIFY_JOB .
+
+ln -s ../POC/POTCAR relax/POTCAR
+ln -s ../POC/POTCAR scf/POTCAR
+ln -s ../POC/POTCAR bands/POTCAR
+ln -s ../POC/POTCAR dos/POTCAR
+#cp ~/matlab_function/* pic
+#rm MODIFY_JOB
+

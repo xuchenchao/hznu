@@ -1,0 +1,451 @@
+#!/bin/bash
+! [ -f KPOINTS ] && echo "ERROR! NO KPOINTS" && exit
+> band_spinpolar_up.m 
+#read -p "Please Input the number of bands (from EIGENVAL):" NBANDS
+#while [ -z "$NBANDS" ]
+#	do
+#		read -p "please input the number of K:" NBANDS
+#	done
+#while [ $NBANDS -lt 2 ]
+#	do
+#		read -p "the number must be more than 1:" NBANDS
+#	done
+NBANDS=`cat EIGENVAL | head -n 6 | tail -1 | awk '{print $3}'`
+num=`cat KPOINTS | grep "\!" | wc -l`
+num=$[num/2]
+printf "function [Min_bands_up,Max_bands_up]=band_spinpolar_up(Fermi,Emin,Emax,spin)
+     if ~ exist('Fermi','var')
+         Fermi=0;
+     end
+     if ~exist('spin','var')
+         spin=0;
+     end
+     if ~exist('Emin','var')
+         Emin=0;
+     end
+     if ~exist('Emax','var')
+         Emax=0;
+     end
+     EIG_VAL=textread('EIGENVAL','','headerlines',7);
+     if spin==0
+         spin=spin+1;
+     end
+     spin=spin+1;%%if spin=0 or 1 choose spin_up(non_spin) ; if spin=2 choose spin_down
+     kmesh=100;
+     Nband=$NBANDS;
+     h1=5;
+     h2=1.5;
+     EIG_VAL1=EIG_VAL;
+     rm_K=1:9:size(EIG_VAL,1);
+         EIG_VAL1(rm_K,:)=[];
+     
+     if Emin==0 || Emin<min(EIG_VAL1(:,2))
+         Emin=min(EIG_VAL1(:,2));
+     end
+     if Emax==0 || Emax>max(EIG_VAL1(:,2))
+        Emax=max(EIG_VAL1(:,2));
+     end
+     
+    FIG=figure('name','spin_up')
+     hold on; 
+     band_energy_up=zeros($num*kmesh,Nband);  \n
+"  > band_spinpolar_up.m 
+
+num_ind=`cat KPOINTS | grep "\!" | sed "s/\!//" | sort -t " " -k4 | uniq | wc -l`
+for i in `seq 1 $num_ind`
+	do 
+		K_P=`cat KPOINTS | grep "\!" | sed "s/\!//" | sort -t " " -k4 | uniq |awk "NR==$i" | awk '{print $4}'`
+		K_Px=`cat KPOINTS | grep "\!" | sed "s/\!//" | sort -t " " -k4 | uniq |awk "NR==$i" | awk '{print $1}'`
+		K_Py=`cat KPOINTS | grep "\!" | sed "s/\!//" | sort -t " " -k4 | uniq |awk "NR==$i" | awk '{print $2}'`
+		K_Pz=`cat KPOINTS | grep "\!" | sed "s/\!//" | sort -t " " -k4 | uniq |awk "NR==$i" | awk '{print $3}'`		
+		printf "\t$K_P=find(EIG_VAL(:,1)==$K_Px&EIG_VAL(:,2)==$K_Py&EIG_VAL(:,3)==$K_Pz);\n" >> band_spinpolar_up.m 
+	done
+K_array=($(cat KPOINTS | grep "\!" | sed "s/\!//" | awk '{print $4}'))
+for i in `seq 0 $[$[${#K_array[@]}-2]/2]`
+do
+	K_n=1
+	j=0
+	while [ $j -lt $[$i*2] ]
+		do
+			[ "${K_array[$[$i*2]]}" == "${K_array[$j]}" ] && K_n=$[$K_n+1]
+			#echo "$K_n"
+			j=$[$j+1]
+		done
+	printf "
+	       %%%% ${K_array[$[$i*2]]}--${K_array[$[2*$i+1]]} 
+		  for j=1:Nband 
+		      for i=1:kmesh 
+		         k=(Nband+1)*(i-1)+2+(j-1)+${K_array[$[2*$i]]}($K_n)-1; 
+		         band_energy_up(i+kmesh*$i,j)=EIG_VAL(k,spin);
+		      end 
+		  end 
+		" >> band_spinpolar_up.m 
+done
+
+printf "
+  %%%%	
+   bands_min=0;bands_max=0;
+   for i=1:Nband
+       if max(band_energy_up(:,i))<Emin 
+           %% max(band_energy_up(:,i))
+            bands_min=i;
+       end
+   end    
+   
+  if bands_min==0
+           bands_min=1;
+  else
+           bands_min=bands_min+1;
+  end
+  
+   for i=Nband:-1:1
+       if min(band_energy_up(:,i))>Emax 
+            bands_max=i;
+       end
+   end
+   if bands_max==0
+       bands_max=Nband;
+   else
+       bands_max=bands_max-1;
+   end
+   Nband=bands_max-bands_min+1;
+   band_energy_up=band_energy_up(:,bands_min:bands_max);
+   band_energy_up=band_energy_up-Fermi;
+   
+   %%%%bands
+          a = findall(gcf,'type','axes');
+          set(a,'XTickLabel',[])
+          axis([0 kmesh*$num min(band_energy_up(:,1))-0.5 max(band_energy_up(:,Nband))+0.5])  
+
+" >> band_spinpolar_up.m 
+
+K_array_ind=($(cat KPOINTS | grep "\!" | sed "s/\!//" | uniq |awk '{print $4}'))
+
+for i in  `seq 0 $[${#K_array_ind[@]}-1]`
+	do
+		printf "
+       %%%% ${K_array_ind[$i]}
+            line([kmesh*$i,kmesh*$i],[min(band_energy_up(:,1))-0.5,max(band_energy_up(:,Nband))+0.5],'linestyle','--','color','k')
+         text((kmesh*$i-h1),min(band_energy_up(:,1))-h2,'\color{red}${K_array_ind[$i]}')
+" >> band_spinpolar_up.m 
+	done
+
+printf "
+
+      Max_bands_up=ceil(max(band_energy_up(:,Nband)));
+      Min_bands_up=floor(min(band_energy_up(:,1)));
+   
+   
+   save bands.mat;
+   COLOR_LINE=jet(Nband);
+              for j=1:Nband    
+                  plot(1:$num*kmesh,band_energy_up(:,j),'.','MarkerSize',3,'color',COLOR_LINE(j,:))
+              end
+          line([1,kmesh*$num],[0,0],'linestyle','--','color','r'); 
+   saveas(FIG,'bands.eps','psc2')
+
+
+
+end
+"  >> band_spinpolar_up.m 
+
+echo "band_spinpolar_up.m is finished"
+echo "============================================================="
+> density_of_state.m
+>NUM_GROUP
+>num_group2
+read -p "Please Input the number of group :" num_group
+while [ -z "$num_group" ]
+	do
+		read -p "Please Input the number of group :" num_group
+	done
+for i in `seq 1 $num_group`
+	do
+		read -p "Please Input the atom in group $i :" group$i
+		unset aa
+		eval aa="\$group$i"
+		unset fir_aa
+                fir_aa=`echo "$aa" | cut -d " " -f1`
+		if [ "$fir_aa" = "@" ]
+			then
+				begin_aa=`echo "$aa" | cut -d " " -f2`
+				end_aa=`echo "$aa" | cut -d " " -f3`
+				echo -n `seq $begin_aa $end_aa` >> NUM_GROUP
+				echo -n ";" >> NUM_GROUP
+			else		
+				[ -n "$aa" ] && printf "$aa;" >> NUM_GROUP
+				while [ -z "$aa" ]
+					do
+						echo "NO INPUT "
+						read -p "Please Input the atom in group $i :" group$i
+						eval aa="\$group$i"
+						[ -n "$aa" ] && printf "$aa;" >> NUM_GROUP
+						
+				done
+		fi
+done
+
+bbb_old=0
+
+for i in `seq 1 $num_group`
+	do 
+		bbb_new=`cat NUM_GROUP | awk -F ";" '{print $'$i'}' | wc -w`
+		[ $bbb_old -lt  $bbb_new ] && bbb_old=$bbb_new 
+	done
+> num_group2
+for i in `seq 1 $num_group`	
+	do
+		bbb_new=`cat NUM_GROUP | awk -F ";" '{print $'$i'}' | wc -w`		
+		[ $bbb_new -eq  $bbb_old ] && 	echo -n `cat NUM_GROUP | awk -F ";" '{print $'$i'";"}' ` >> num_group2
+		if [ $bbb_new -lt  $bbb_old ]   	
+			then
+				echo -n `cat NUM_GROUP | awk -F ";" '{print $'$i'}'  ` >> num_group2
+				for i in 1 `seq 1 $[$bbb_old-$bbb_new-1]`
+					do
+						 echo -n " 0" 	>> num_group2				
+					done
+				echo -n ";" >> num_group2
+		fi
+
+done
+
+
+
+#atoms_group=` cat num_group2  | wc -l `
+#rm num_group2
+dos_enmax=`cat DOSCAR | head -n 6| tail -1 | awk -F '0*' '{print $1}'`
+dos_enmin=`cat DOSCAR | head -n 6| tail -1 | awk -F '0*' '{print $2}'`
+dos_NEDOS=`echo "($dos_enmax-$dos_enmin)*1000" | bc`
+printf "%%function density_of_state(down_limit,up_limit,SPIN)
+   function density_of_state(SPIN)
+    load bands.mat;
+     if ~exist('SPIN','var')
+         SPIN=0;
+     end
+    %% if ~exist('down_limit','var')
+    %%     down_limit=Min_bands_up;
+    %% end
+    %% if ~exist('up_limit','var')
+    %%     up_limit=Max_bands_up;
+    %% end
+    %%NEDOS=(Max_bands_up-Min_bands_up)/0.001 ;
+    DOS=textread('DOSCAR','','headerlines',6);
+    
+    %%if up_limit>Max_bands_up
+    %%    up_limit=Max_bands_up;
+    %%end
+    %%if down_limit<Min_bands_up
+    %%    down_limit=Min_bands_up;
+    %%end    
+    
+    %%dos_tot=DOS(find(DOS(:,1)==down_limit,1):find(DOS(:,1)==up_limit,1),[1 2 4]);
+    %%up_limit=ceil(up_limit+Fermi);
+    %%down_limit=floor(down_limit+Fermi);
+    %%if up_limit>max(DOS(:,1))
+    %%    up_limit=max(DOS(:,1));
+    %%end
+    %%if down_limit<min(DOS(:,1))
+    %%    down_limit=min(DOS(:,1));
+    %%end
+    
+    %%NEDOS=(up_limit-down_limit)/0.001;
+    NEDOS=$dos_NEDOS
+    up_limit=$dos_enmax
+    down_limit=$dos_enmin
+    atom_dos_down=find(DOS(:,1)==down_limit);
+   
+    
+    %%num_atom_dos=find(DOS(:,1)==min(DOS(:,1))); 
+    num=size(find(DOS(:,1)==min(DOS(:,1))),1)-1;%%
+   %%Pdos NEDOS*10*atom_num  here 10 means {s px py pz dx dy dz dx2-y2 dz2}, the most important one  
+    Pdos=zeros(NEDOS,10,num);%%s px py pz  d....
+    for k=1:num
+        Pdos(:,1,k)=DOS(atom_dos_down(k+1):atom_dos_down(k+1)+NEDOS-1,1);
+    end
+ switch SPIN
+     case 0
+            for k=1:num
+                for j=1:9
+                    Pdos(:,j+1,k)=DOS(atom_dos_down(k+1):(atom_dos_down(k+1)+NEDOS-1),j+1);
+                end
+            end
+            dos_tot=DOS(atom_dos_down(1):(atom_dos_down(1)+NEDOS-1),[1 2 3]);
+     case 1   %%spin up
+            for k=1:num
+                for j=1:9
+                    Pdos(:,j+1,k)=DOS(atom_dos_down(k+1):(atom_dos_down(k+1)+NEDOS-1),2*j);
+                end
+            end
+             dos_tot=DOS(atom_dos_down(1):(atom_dos_down(1)+NEDOS-1),[1 2 4]);
+     case 2   %%spin down  
+            for k=1:num
+                for j=1:9
+                    Pdos(:,j+1,k)=DOS(atom_dos_down(k+1):(atom_dos_down(k+1)+NEDOS-1),2*j+1);
+                end
+            end 
+             dos_tot=DOS(atom_dos_down(1):(atom_dos_down(1)+NEDOS-1),[1 3 5]);
+     otherwise
+            disp('no orbit input');     
+ end
+    %% fermi energy
+        dos_tot(:,1)=dos_tot(:,1)-Fermi;
+        Pdos(:,1,:)=Pdos(:,1,:)-Fermi;
+    %%
+    %%min_up=min(dos_tot(:,2));
+    %%max_up=max(dos_tot(:,2));
+
+ 
+   Pdos_s=zeros(NEDOS,2,num);
+   for i=1:num
+       Pdos_s(:,1,i)=Pdos(:,1,i);
+       Pdos_s(:,2,i)=Pdos(:,2,i);
+   end
+    
+     Pdos_p=zeros(NEDOS,2,num);
+   for i=1:num
+       Pdos_p(:,1,i)=Pdos(:,1,i);
+       Pdos_p(:,2,i)=Pdos(:,3,i)+Pdos(:,4,i)+Pdos(:,5,i);
+   end
+     Pdos_d=zeros(NEDOS,2,num);
+   for i=1:num
+       Pdos_d(:,1,i)=Pdos(:,1,i);
+       Pdos_d(:,2,i)=Pdos(:,6,i)+Pdos(:,7,i)+Pdos(:,8,i)+Pdos(:,9,i)+Pdos(:,10,i);
+   end
+
+atoms_group=[">> density_of_state.m
+	cat num_group2 >> density_of_state.m
+	printf "];
+        num_group=size(atoms_group,1);" >> density_of_state.m
+
+printf "  
+  for j=1:num_group
+      Pdos_s_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_s_select(:,1,j)=Pdos_s(:,1);
+
+      Pdos_p_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_p_select(:,1,j)=Pdos_p(:,1);
+
+
+      Pdos_d_select(:,:,j)=zeros(NEDOS,2);
+      Pdos_d_select(:,1,j)=Pdos_d(:,1);
+  end
+  
+  for j=1:num_group
+      for i=1:size(atoms_group,2)
+        if atoms_group(j,i)==0
+            break;
+        else
+            Pdos_s_select(:,2,j)=Pdos_s_select(:,2,j)+Pdos_s(:,2,atoms_group(j,i));
+            Pdos_p_select(:,2,j)=Pdos_p_select(:,2,j)+Pdos_p(:,2,atoms_group(j,i));
+            Pdos_d_select(:,2,j)=Pdos_d_select(:,2,j)+Pdos_d(:,2,atoms_group(j,i));
+        end
+      end
+  end
+
+
+save dos.mat
+
+end
+
+
+" >> density_of_state.m
+echo "density_of_state.m is finished"
+echo "============================================================="
+
+> mat2dat.m
+
+printf "load('dos.mat');
+        fid=fopen('dos_tot.dat','w');
+        [m,n]=size(dos_tot);
+        for i=1:1:m
+            for j=1:1:n
+                if j==n
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ n'" | sed -n "s/ //p" >> mat2dat.m
+printf ",dos_tot(i,j));  
+                else
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ t'" | sed -n "s/ //p" >> mat2dat.m
+printf ",dos_tot(i,j));
+                end
+            end
+        end
+        fclose(fid);"  >> mat2dat.m
+
+for i in `seq 1 $num_group`
+	do	
+		printf "
+        fid=fopen('Pdos_s_select$i.dat','w');
+        [m,n]=size(Pdos_s_select(:,:,$i));
+        for i=1:1:m
+            for j=1:1:n
+                if j==n
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ n'" | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_s_select(i,j,$i));
+                else
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ t'" | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_s_select(i,j,$i));
+                end
+            end
+        end
+        fclose(fid);" >> mat2dat.m
+	done
+
+for i in `seq 1 $num_group`
+	do	
+		printf "
+        fid=fopen('Pdos_p_select$i.dat','w');
+        [m,n]=size(Pdos_p_select(:,:,$i));
+        for i=1:1:m
+            for j=1:1:n
+                if j==n
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ n'" | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_p_select(i,j,$i));
+                else
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ t'"  | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_p_select(i,j,$i)); 
+                end
+            end
+        end
+        fclose(fid);"  >> mat2dat.m
+	done
+
+for i in `seq 1 $num_group`
+	do	
+		printf "
+        fid=fopen('Pdos_d_select$i.dat','w');
+        [m,n]=size(Pdos_d_select(:,:,$i));
+        for i=1:1:m
+            for j=1:1:n
+                if j==n 
+                    fprintf(fid," >> mat2dat.m
+printf "'%%g\ n'" | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_d_select(i,j,$i));
+                else
+                    fprintf(fid,"  >> mat2dat.m
+printf "'%%g\ t'" | sed -n "s/ //p" >> mat2dat.m
+printf ",Pdos_d_select(i,j,$i));
+                end
+            end
+        end
+        fclose(fid);" >> mat2dat.m
+	done
+echo "mat2dat.m is finished"
+echo "============================================================="
+rm num_group2
+rm NUM_GROUP
+
+
+
+
+
+
+
+
+
+
+
